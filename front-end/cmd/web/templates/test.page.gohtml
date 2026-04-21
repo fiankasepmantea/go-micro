@@ -46,8 +46,12 @@
             .then((data) => {
                 sent.innerHTML = "empty post request";
                 received.innerHTML = JSON.stringify(data, undefined, 4)
-                if (data.error) console.log(data.message);
-                output.innerHTML += `<br><strong>Response from broker service</strong>: ${data.message}`;
+                if (data.error) {
+                    console.log(data.message);
+                } else {
+                    output.innerHTML += `<br><strong>Response from broker service</strong>: ${data.message}`;
+                }
+                
             })
             .catch((error) => {
                 output.innerHTML += "<br><br>Error: " + error;

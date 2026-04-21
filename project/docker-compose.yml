@@ -1,12 +1,12 @@
-services:
+    services:
 
-  broker-service:
-    build:
-      context: ./../broker-service
-      dockerfile: ./../broker-service/broker-service.dockerfile
-    restart: always
-    ports: 
-      - "8081:8080"
-    deploy:
-      mode: replicated
-      replicas: 1
+      broker-service:
+        build:
+          context: ./../broker-service
+          dockerfile: ./../broker-service/broker-service.dockerfile
+        restart: always
+        ports: 
+          - "8081:8080"
+        deploy:
+          mode: replicated
+          replicas: 1
