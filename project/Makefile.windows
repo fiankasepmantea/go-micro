@@ -43,8 +43,10 @@ build_front:
 
 ## start: starts the front end
 start: build_front
-    @echo Starting front end
-    chdir ..\front-end && start /B ${FRONT_END_BINARY} &
+	@echo "Stopping old frontend..."
+	@taskkill /IM "${FRONT_END_BINARY}" /F
+	@echo "Starting front end..."
+	cd ../front-end && ./${FRONT_END_BINARY}
 
 ## stop: stop the front end
 stop:

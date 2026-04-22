@@ -42,8 +42,10 @@ build_front:
 
 ## start: starts the front end
 start: build_front
-	@echo "Starting front end"
-	cd ../front-end && ./${FRONT_END_BINARY} &
+	@echo "Stopping old frontend..."
+	@-pkill -f ${FRONT_END_BINARY} || true
+	@echo "Starting front end..."
+	cd ../front-end && ./${FRONT_END_BINARY}
 
 ## stop: stop the front end
 stop:

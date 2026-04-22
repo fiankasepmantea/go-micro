@@ -38,3 +38,4 @@ services:
       POSTGRES_DB: "users"
     volumes:
       - ./db-data/postgres/:/var/lib/postgresql/data
+      - ./users.sql:/docker-entrypoint-initdb.d/users.sql
