@@ -34,21 +34,19 @@ type LogEntry struct {
 }
 
 func (l *LogEntry) Insert(entry LogEntry) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
 	collection := client.Database("logs").Collection("logs")
 
-	_, err := collection.InsertOne(context.TODO(), LogEntry{
-		Name:      entry.Name,
-		Data:      entry.Data,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+	_, err := collection.InsertOne(ctx, bson.M{
+		"name":       entry.Name,
+		"data":       entry.Data,
+		"created_at": time.Now(),
+		"updated_at": time.Now(),
 	})
 
-	if err != nil {
-		log.Println("Error inserting:", err)
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (l *LogEntry) All() ([]*LogEntry, error) {
@@ -120,7 +118,7 @@ func (l *LogEntry) DropCollection() error {
 }
 
 func (l *LogEntry) Update(id string) (*mongo.UpdateResult, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	docID, err := bson.ObjectIDFromHex(id)
@@ -128,7 +126,7 @@ func (l *LogEntry) Update(id string) (*mongo.UpdateResult, error) {
 		return nil, err
 	}
 
-	result, err := client.Database("logs").Collection("logs").UpdateOne(
+	return client.Database("logs").Collection("logs").UpdateOne(
 		ctx,
 		bson.M{"_id": docID},
 		bson.M{
@@ -139,10 +137,4 @@ func (l *LogEntry) Update(id string) (*mongo.UpdateResult, error) {
 			},
 		},
 	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
 }
