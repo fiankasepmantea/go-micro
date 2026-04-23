@@ -15,7 +15,7 @@ import (
 
 const (
 	webPort  = "8080"
-	mongoURL = "mongodb://mongo:27017"
+	mongoURL = "mongodb://admin:password@mongo:27017/logs?authSource=admin"
 	rpcPort   = "5001"
     gRpcPort  = "50001"
 )

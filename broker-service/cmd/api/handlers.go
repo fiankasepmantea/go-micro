@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"time"
+	"log"
 )
 
 type RequestPayload struct {
@@ -54,7 +55,7 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 func (app *Config) logItem(w http.ResponseWriter, entry LogPayload) {
 	jsonData, _ := json.MarshalIndent(entry, "", "\t")
 
-	logServiceURL := "http://logger-service/log"
+	logServiceURL := "http://logger-service:8080/log"
 
 	request, err := http.NewRequest("POST", logServiceURL, bytes.NewBuffer(jsonData))
 	if err != nil {
@@ -70,13 +71,14 @@ func (app *Config) logItem(w http.ResponseWriter, entry LogPayload) {
 
 	response, err := client.Do(request)
 	if err != nil {
+		log.Println("LOG SERVICE ERROR:", err)
 		app.errorJSON(w, err)
 		return
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		app.errorJSON(w, err)
+		app.errorJSON(w, errors.New("error calling log service"))
 		return
 	}
 
@@ -104,6 +106,7 @@ func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
 	}
 	response, err := client.Do(request)
 	if err != nil {
+		log.Println("LOG SERVICE ERROR:", err)
 		app.errorJSON(w, err)
 		return
 	}
