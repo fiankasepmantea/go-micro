@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"log"
 	"net/http"
 )
 
@@ -17,6 +18,7 @@ func (app *Config) SendMail(w http.ResponseWriter, r *http.Request) {
     // Parse JSON request body
     err := app.readJSON(w, r, &requestPayload)
     if err != nil {
+        log.Println(err)
         app.errorJSON(w, err, http.StatusBadRequest)
         return
     }
@@ -53,6 +55,7 @@ func (app *Config) SendMail(w http.ResponseWriter, r *http.Request) {
     // Send the email
     err = app.Mailer.SendSMTPMessage(msg)
     if err != nil {
+        log.Println(err)
         app.errorJSON(w, err, http.StatusInternalServerError)
         return
     }
