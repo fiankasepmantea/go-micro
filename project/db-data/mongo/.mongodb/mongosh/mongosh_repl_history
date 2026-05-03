@@ -1,0 +1,8 @@
+db getUsers()
+db.getUsers()
+exit
+docker exec -it project-mongo-1 mongosh "mongodb://admin:password@localhost:27017/admin"
+db.getUsers()
+use admin
+db.getUsers()use admin
+exit

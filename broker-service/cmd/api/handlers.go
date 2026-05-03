@@ -5,8 +5,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -57,6 +59,8 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 			app.authenticate(w, requestPayload.Auth)
 		case "log":
 			app.logEventViaRabbit(w, requestPayload.Log)
+		// case "log":
+		// 	app.logItem(w, requestPayload.Log)
 		case "mail":
 			app.sendEmail(w, requestPayload.Mail)
 		default:
@@ -202,7 +206,9 @@ func (app *Config) logEventViaRabbit(w http.ResponseWriter, l LogPayload) {
 	}
 
 	var payload jsonResponse
+	payload.Error = false
 	payload.Message = "logged via RabbitMQ"
+
 	app.writeJSON(w, http.StatusOK, payload)
 }
 
@@ -217,11 +223,14 @@ func (app *Config) pushToQueue(name, msg string) error {
 		Data: msg,
 	}
 
-	j, _ = json.MarshalIndent(&payload, "", "\t")
-	err = emitter.Push(string(j), "log.INFO")
+	j, _ := json.MarshalIndent(&payload, "", "\t")
+	// err = emitter.Push(string(j), "log.INFO")
+	routingKey := fmt.Sprintf("log.%s", strings.ToUpper(name))
+	err = emitter.Push(string(j), routingKey)
 	if err != nil {
 		return err
 	}
+	
 	return nil
 }
 

@@ -56,7 +56,7 @@ func (consumer *Consumer) Listen(topics []string) error {
 	}
 
 	for _, s := range topics {
-		ch.QueueBind(
+		err := ch.QueueBind(
 			q.Name,
 			s,
 			"logs_topic",
@@ -77,6 +77,7 @@ func (consumer *Consumer) Listen(topics []string) error {
 	forever := make(chan bool)
 	go func() {
 		for d := range messages {
+			log.Println("Received:", string(d.Body))
 			var payload Payload
 			_ = json.Unmarshal(d.Body, &payload)
 
