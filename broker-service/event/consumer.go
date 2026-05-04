@@ -69,19 +69,31 @@ func (consumer *Consumer) Listen(topics []string) error {
 		}
 	}
 
-	messages, err := ch.Consume(q.Name, "", true, false, false, false, nil)
+	// messages, err := ch.Consume(q.Name, "", true, false, false, false, nil)
+	messages, err := ch.Consume(q.Name, "", false, false, false, false, nil)
 	if err != nil {
 		return err
 	}
 
 	forever := make(chan bool)
 	go func() {
+		// for d := range messages {
+		// 	log.Println("Received:", string(d.Body))
+		// 	var payload Payload
+		// 	_ = json.Unmarshal(d.Body, &payload)
+
+		// 	go handlePayload(payload)
+		// }
 		for d := range messages {
-			log.Println("Received:", string(d.Body))
 			var payload Payload
 			_ = json.Unmarshal(d.Body, &payload)
 
-			go handlePayload(payload)
+			err := handlePayload(payload)
+			if err != nil {
+				log.Println("failed:", err)
+			} else {
+				d.Ack(false)
+			}
 		}
 	}()
 
@@ -94,23 +106,23 @@ func (consumer *Consumer) Listen(topics []string) error {
 
 func handlePayload(payload Payload) {
 	switch payload.Name {
-		case "log", "event":
-			// log whatever we get
-			err := logEvent(payload)
-			if err != nil {
-				log.Println(err)
-			}
+	case "log", "event":
+		// log whatever we get
+		err := logEvent(payload)
+		if err != nil {
+			log.Println(err)
+		}
 
-		case "auth":
-			// authenticate
+	case "auth":
+		// authenticate
 
-		// you can have as many cases as you want, as long as you write the logic
+	// you can have as many cases as you want, as long as you write the logic
 
-		default:
-			err := logEvent(payload)
-			if err != nil {
-				log.Println(err)
-			}
+	default:
+		err := logEvent(payload)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
 
