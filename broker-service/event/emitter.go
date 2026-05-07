@@ -30,8 +30,8 @@ func (e *Emitter) Push(event string, severity string) error {
 	log.Println("Pushing to channel")
 
 	err = channel.Publish(
-		"logs_topic",
-		severity,
+		"logs_topic", // exchange name
+		severity, // routing key
 		false,
 		false,
 		amqp.Publishing{

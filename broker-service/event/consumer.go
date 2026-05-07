@@ -85,15 +85,24 @@ func (consumer *Consumer) Listen(topics []string) error {
 		// 	go handlePayload(payload)
 		// }
 		for d := range messages {
-			var payload Payload
-			_ = json.Unmarshal(d.Body, &payload)
+			log.Println("Received:", string(d.Body))
 
-			err := handlePayload(payload)
+			var payload Payload
+
+			err := json.Unmarshal(d.Body, &payload)
 			if err != nil {
-				log.Println("failed:", err)
-			} else {
-				d.Ack(false)
+				log.Println("JSON ERROR:", err)
+				continue
 			}
+
+			err = handlePayload(payload)
+			if err != nil {
+				log.Println("HANDLE ERROR:", err)
+				continue
+			}
+
+			d.Ack(false)
+			log.Println("Message processed successfully")
 		}
 	}()
 
@@ -104,25 +113,18 @@ func (consumer *Consumer) Listen(topics []string) error {
 
 }
 
-func handlePayload(payload Payload) {
+func handlePayload(payload Payload) error {
 	switch payload.Name {
+
 	case "log", "event":
-		// log whatever we get
-		err := logEvent(payload)
-		if err != nil {
-			log.Println(err)
-		}
+		return logEvent(payload)
 
 	case "auth":
-		// authenticate
-
-	// you can have as many cases as you want, as long as you write the logic
+		log.Println("auth event received")
+		return nil
 
 	default:
-		err := logEvent(payload)
-		if err != nil {
-			log.Println(err)
-		}
+		return logEvent(payload)
 	}
 }
 
