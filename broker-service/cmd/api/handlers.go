@@ -58,10 +58,12 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	switch requestPayload.Action {
 		case "auth":
 			app.authenticate(w, requestPayload.Auth)
-		case "log":
-			app.logEventViaRabbit(w, requestPayload.Log)
+		// case "log":
+		// 	app.logEventViaRabbit(w, requestPayload.Log)
 		// case "log":
 		// 	app.logItem(w, requestPayload.Log)
+		case "log":
+			app.logItemViaRPC(w, requestPayload.Log)
 		case "mail":
 			app.sendEmail(w, requestPayload.Mail)
 		default:
@@ -268,7 +270,7 @@ func (app *Config) logItemViaRPC(w http.ResponseWriter, l LogPayload) {
 		Message: result,
 	}
 
-	app.writeJSON(w, http.StatusAccepted, payload)
+	app.writeJSON(w, http.StatusOK, payload)
 }
 
 
