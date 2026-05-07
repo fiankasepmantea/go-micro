@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"net/rpc"
 	"time"
 
 	"log-service/data"
@@ -38,6 +40,18 @@ func main() {
 
 	log.Println("Connected to MongoDB!")
 
+	// Register the RPC Server
+	rpcServer := &RPCServer{
+		Client: app.Mongo,
+	}
+
+	err = rpc.Register(rpcServer)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	go app.rpcListen()
+	
 	err = app.serve()
 	if err != nil {
 		log.Panic(err)
@@ -74,4 +88,21 @@ func connectToMongo() (*mongo.Client, error) {
 	}
 
 	return c, nil
+}
+
+func (app *Config) rpcListen() error {
+	log.Println("Starting RPC server on port ", rpcPort)
+	listen, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", rpcPort))
+	if err != nil {
+		return err
+	}
+	defer listen.Close()
+
+	for {
+		rpcConn, err := listen.Accept()
+		if err != nil {
+			continue
+		}
+		go rpc.ServeConn(rpcConn)
+	}
 }
