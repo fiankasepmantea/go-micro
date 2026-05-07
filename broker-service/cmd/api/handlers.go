@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/rpc"
 	"strings"
 	"time"
 )
@@ -232,6 +233,42 @@ func (app *Config) pushToQueue(name, msg string) error {
 	}
 	
 	return nil
+}
+
+type RPCPayload struct {
+	Name string
+	Data string
+}
+func (app *Config) logItemViaRPC(w http.ResponseWriter, l LogPayload) {
+	// Connect to RPC server
+	client, err := rpc.Dial("tcp", "logger-service:5001")
+	if err != nil {
+		app.errorJSON(w, err, http.StatusServiceUnavailable)
+		return
+	}
+	defer client.Close()
+
+	// Prepare RPC payload
+	rpcPayload := RPCPayload{
+		Name: l.Name,
+		Data: l.Data,
+	}
+
+	// Call RPC method
+	var result string
+	err = client.Call("RPCServer.LogInfo", rpcPayload, &result)
+	if err != nil {
+		app.errorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	// Send success response
+	payload := jsonResponse{
+		Error:   false,
+		Message: result,
+	}
+
+	app.writeJSON(w, http.StatusAccepted, payload)
 }
 
 
