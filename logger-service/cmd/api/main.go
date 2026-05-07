@@ -22,6 +22,7 @@ const (
 
 type Config struct {
 	Models data.Models
+	Mongo  *mongo.Client
 }
 
 func main() {
@@ -32,6 +33,7 @@ func main() {
 
 	app := Config{
 		Models: data.New(client),
+		Mongo:  client,
 	}
 
 	log.Println("Connected to MongoDB!")
