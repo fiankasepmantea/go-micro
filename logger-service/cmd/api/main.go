@@ -51,6 +51,7 @@ func main() {
 	}
 
 	go app.rpcListen()
+	go app.grpcListen()
 	
 	err = app.serve()
 	if err != nil {

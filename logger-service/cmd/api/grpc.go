@@ -2,11 +2,18 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"log-service/data"
 	"log-service/logs"
+
+	"google.golang.org/grpc"
 )
 
 type LogServer struct {
@@ -49,4 +56,46 @@ func (l *LogServer) HealthCheck(ctx context.Context, req *logs.HealthCheckReques
         Status:  "healthy",
         Version: "1.0.0",
     }, nil
+}
+
+func (app *Config) grpcListen() {
+    // Create network listener
+    lis, err := net.Listen("tcp", fmt.Sprintf(":%s", gRpcPort))
+    if err != nil {
+        log.Fatalf("Failed to listen for gRPC on port %s: %v", gRpcPort, err)
+    }
+    defer lis.Close()
+
+    // Create gRPC server with options
+    serverOpts := []grpc.ServerOption{
+        grpc.MaxRecvMsgSize(1024 * 1024 * 4), // 4MB max message size
+        grpc.MaxSendMsgSize(1024 * 1024 * 4), // 4MB max message size
+    }
+    
+    s := grpc.NewServer(serverOpts...)
+
+    // Register LogService server
+    logs.RegisterLogServiceServer(s, &LogServer{
+        Models: app.Models,
+    })
+
+    // Log server startup
+    log.Printf("gRPC Server started on port %s", gRpcPort)
+    log.Printf("Listening for gRPC connections on tcp://%s", lis.Addr().String())
+
+    // Serve with graceful shutdown
+    go func() {
+        if err := s.Serve(lis); err != nil {
+            log.Fatalf("Failed to serve gRPC: %v", err)
+        }
+    }()
+
+    // Wait for interrupt signal
+    quit := make(chan os.Signal, 1)
+    signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+    <-quit
+
+    log.Println("Shutting down gRPC server...")
+    s.GracefulStop()
+    log.Println("gRPC server stopped")
 }
