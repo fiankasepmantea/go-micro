@@ -2,7 +2,9 @@ package main
 
 import (
 	"broker/event"
+	"broker/logs"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,17 +13,20 @@ import (
 	"net/rpc"
 	"strings"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type RequestPayload struct {
-	Action string `json:"action"`
-	Auth AuthPayload `json:"auth,omitempty"`
-	Log LogPayload `json:"log,omitempty"`
-	Mail MailPayload `json:"mail,omitempty"`
+	Action string      `json:"action"`
+	Auth   AuthPayload `json:"auth,omitempty"`
+	Log    LogPayload  `json:"log,omitempty"`
+	Mail   MailPayload `json:"mail,omitempty"`
 }
 
 type AuthPayload struct {
-	Email string `json:"email"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
@@ -31,15 +36,15 @@ type LogPayload struct {
 }
 
 type MailPayload struct {
-	From string `json:"from"`
-	To string `json:"to"`
+	From    string `json:"from"`
+	To      string `json:"to"`
 	Subject string `json:"subject"`
 	Message string `json:"message"`
 }
 
 func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
 	payload := jsonResponse{
-		Error: false,
+		Error:   false,
 		Message: "Hit the broker",
 	}
 
@@ -56,18 +61,18 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch requestPayload.Action {
-		case "auth":
-			app.authenticate(w, requestPayload.Auth)
-		// case "log":
-		// 	app.logEventViaRabbit(w, requestPayload.Log)
-		// case "log":
-		// 	app.logItem(w, requestPayload.Log)
-		case "log":
-			app.logItemViaRPC(w, requestPayload.Log)
-		case "mail":
-			app.sendEmail(w, requestPayload.Mail)
-		default:
-			app.errorJSON(w, errors.New("unknown action"))
+	case "auth":
+		app.authenticate(w, requestPayload.Auth)
+	// case "log":
+	// 	app.logEventViaRabbit(w, requestPayload.Log)
+	// case "log":
+	// 	app.logItem(w, requestPayload.Log)
+	case "log":
+		app.logItemViaRPC(w, requestPayload.Log)
+	case "mail":
+		app.sendEmail(w, requestPayload.Mail)
+	default:
+		app.errorJSON(w, errors.New("unknown action"))
 	}
 }
 
@@ -140,7 +145,7 @@ func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
 		return
 	}
 
-	// create a variable we'll read response.Body into 
+	// create a variable we'll read response.Body into
 	var jsonFromService jsonResponse
 
 	// decode the json from the auth service
@@ -152,7 +157,7 @@ func (app *Config) authenticate(w http.ResponseWriter, a AuthPayload) {
 
 	if jsonFromService.Error {
 		app.errorJSON(w, errors.New(jsonFromService.Message), http.StatusUnauthorized)
-		return 
+		return
 	}
 
 	var payload jsonResponse
@@ -233,7 +238,7 @@ func (app *Config) pushToQueue(name, msg string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -241,6 +246,7 @@ type RPCPayload struct {
 	Name string
 	Data string
 }
+
 func (app *Config) logItemViaRPC(w http.ResponseWriter, l LogPayload) {
 	// Connect to RPC server
 	client, err := rpc.Dial("tcp", "logger-service:5001")
@@ -273,5 +279,40 @@ func (app *Config) logItemViaRPC(w http.ResponseWriter, l LogPayload) {
 	app.writeJSON(w, http.StatusOK, payload)
 }
 
+func (app *Config) LogViaGRPC(w http.ResponseWriter, r *http.Request) {
+	var requestPayload RequestPayload
 
+	err := app.readJSON(w, r, &requestPayload)
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
 
+	conn, err := grpc.Dial("logger-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+	defer conn.Close()
+
+	c := logs.NewLogServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	_, err = c.WriteLog(ctx, &logs.LogRequest{
+		LogEntry: &logs.Log{
+			Name: requestPayload.Log.Name,
+			Data: requestPayload.Log.Data,
+		},
+	})
+	if err != nil {
+		app.errorJSON(w, err)
+		return
+	}
+
+	var payload jsonResponse
+	payload.Error = false
+	payload.Message = "logged"
+
+	app.writeJSON(w, http.StatusOK, payload)
+}

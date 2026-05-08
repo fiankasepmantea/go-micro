@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package logs;
+
+option go_package = "/logs";
+
+// Log represents a single log entry
+message Log {
+    string name = 1;      // Name/identifier of the log source
+    string data = 2;      // Log message/content
+    string timestamp = 3; // ISO 8601 timestamp
+    string level = 4;     // Log level: INFO, WARN, ERROR, DEBUG
+}
+
+// LogRequest contains a log entry to be written
+message LogRequest {
+    Log logEntry = 1;
+}
+
+// LogResponse contains the result of a log operation
+message LogResponse {
+    string result = 1;    // Success or error message
+    bool success = 2;     // Operation status
+}
+
+// HealthCheckRequest is empty for health check
+message HealthCheckRequest {}
+
+// HealthCheckResponse contains service health status
+message HealthCheckResponse {
+    string status = 1;
+    string version = 2;
+}
+
+// LogService defines the RPC service for logging
+service LogService {
+    // WriteLog writes a single log entry
+    rpc WriteLog(LogRequest) returns (LogResponse);
+    
+    // HealthCheck returns service health status
+    rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
