@@ -1,7 +1,7 @@
 services:
 
   broker-service:
-    image: tsawler/broker-service:latest
+    image: fiankasepman/broker-service:latest
     ports:
       - "8080:8080"
     deploy:
@@ -9,13 +9,13 @@ services:
       replicas: 1
 
   listener-service:
-    image: tsawler/listener-service:latest
+    image: fiankasepman/listener-service:latest
     deploy:
       mode: replicated
       replicas: 1
 
   authentication-service:
-    image: tsawler/authentication-service:latest
+    image: fiankasepman/authentication-service:latest
     deploy:
       mode: replicated
       replicas: 1
@@ -23,13 +23,13 @@ services:
       DSN: "host=postgres port=5432 user=postgres password=root dbname=users sslmode=disable timezone=UTC connect_timeout=5"
 
   logger-service:
-    image: tsawler/logger-service:latest
+    image: fiankasepman/logger-service:latest
     deploy:
       mode: replicated
       replicas: 1
 
   mailer-service:
-    image: tsawler/mail-service:latest
+    image: fiankasepman/mail-service:latest
     deploy:
       mode: replicated
       replicas: 1
